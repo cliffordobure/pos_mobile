@@ -29,9 +29,25 @@ app.use('/admin', express.static(adminDist, { index: false }));
 app.get('/admin', (req, res) => res.sendFile(path.join(adminDist, 'index.html')));
 app.get('/admin/*', (req, res) => res.sendFile(path.join(adminDist, 'index.html')));
 
-await mongoose.connect(MONGODB_URI);
-console.log('MongoDB connected');
+try {
+  await mongoose.connect(MONGODB_URI, {
+    serverSelectionTimeoutMS: 15000,
+    family: 4,
+    autoSelectFamily: false,
+  });
+  console.log('MongoDB connected');
+} catch (err) {
+  console.error('MongoDB connection failed:', err.message);
+  if (err.message.includes('whitelist') || err.message.includes('IP')) {
+    console.error('→ Atlas: Network Access → Add IP → Allow access from anywhere (0.0.0.0/0)');
+  }
+  if (err.message.includes('SSL') || err.message.includes('TLS') || err.cause?.code === 'ERR_SSL_TLSV1_ALERT_INTERNAL_ERROR') {
+    console.error('→ If TLS error persists: Atlas Network Access must include 0.0.0.0/0; or try the Standard connection string (not SRV) from Atlas Connect.');
+  }
+  process.exit(1);
+}
 
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+const host = '0.0.0.0';
+app.listen(PORT, host, () => {
+  console.log(`Server running on http://${host}:${PORT}`);
 });
