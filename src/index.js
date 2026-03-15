@@ -7,6 +7,8 @@ import { fileURLToPath } from 'url';
 
 import authRoutes from './routes/auth.js';
 import syncRoutes from './routes/sync.js';
+import ownerRoutes from './routes/owner.js';
+import staffRoutes from './routes/staff.js';
 import adminRoutes from './routes/admin.js';
 import adminAuthRoutes from './routes/adminAuth.js';
 
@@ -19,8 +21,12 @@ const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/pos_mo
 app.use(cors());
 app.use(express.json());
 
+app.get('/api/health', (req, res) => res.json({ ok: true, message: 'Backend is running' }));
+
 app.use('/api/auth', authRoutes);
 app.use('/api/sync', syncRoutes);
+app.use('/api/owner', ownerRoutes);
+app.use('/api/staff', staffRoutes);
 app.use('/api/admin/auth', adminAuthRoutes);
 app.use('/api/admin', adminRoutes);
 
@@ -28,6 +34,8 @@ const adminDist = path.join(__dirname, '..', 'admin-web', 'dist');
 app.use('/admin', express.static(adminDist, { index: false }));
 app.get('/admin', (req, res) => res.sendFile(path.join(adminDist, 'index.html')));
 app.get('/admin/*', (req, res) => res.sendFile(path.join(adminDist, 'index.html')));
+
+app.use((req, res) => res.status(404).json({ error: 'Not found' }));
 
 try {
   await mongoose.connect(MONGODB_URI, {
